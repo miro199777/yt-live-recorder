@@ -1,0 +1,39 @@
+name: Watch & Record YouTube Live
+
+on:
+  schedule:
+    # every 20 minutes
+    - cron: '*/20 * * * *'
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install prerequisites
+        run: |
+          sudo apt update
+          sudo apt install -y python3-pip jq
+          pip3 install yt-dlp
+
+      - name: Check if channel is live
+        id: livecheck
+        run: |
+          LIVE=$(yt-dlp --skip-download --print-json "https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ/live" \
+                 2>/dev/null | jq -r '.is_live')
+          echo "is_live=$LIVE" >> $GITHUB_OUTPUT
+
+      - name: Record live stream (if live)
+        if: steps.livecheck.outputs.is_live == 'true'
+        run: |
+          echo "🔴 Live detected — recording…"
+          yt-dlp -f best \
+            -o "stream-%(upload_date)s-%(title).%(ext)s" \
+            "https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ/live" \
+            --hls-use-mpegts
+
+      - name: Upload recording (if any)
+        if: steps.livecheck.outputs.is_live == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: live-recording
+          path: stream-*
