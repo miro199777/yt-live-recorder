@@ -1,40 +1,48 @@
 name: Watch & Record YouTube Live
 
 on:
+  # 🔁 Scheduled run: every 20 minutes
   schedule:
-    # every 20 minutes
     - cron: '*/20 * * * *'
+
+  # ▶️ Manual trigger via GitHub UI
+  workflow_dispatch:
+
+  # 🚀 Run on push to test or main branches (for testing or editing)
+  push:
+    branches:
+      - main
+      - test
+      - testing
+      - livestream-test
 
 jobs:
   watch:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Install prerequisites
+      - name: Install yt-dlp and jq
         run: |
           sudo apt update
-          sudo apt install -y python3-pip jq
-          pip3 install yt-dlp
+          sudo apt install -y jq
+          pip install -U yt-dlp
 
       - name: Check if channel is live
         id: livecheck
         run: |
-          LIVE=$(yt-dlp --skip-download --print-json "https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ/live" \
-                 2>/dev/null | jq -r '.is_live')
-          echo "is_live=$LIVE" >> $GITHUB_OUTPUT
+          IS_LIVE=$(yt-dlp -j https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ | jq -r '.is_live')
+          echo "Live status: $IS_LIVE"
+          echo "is_live=$IS_LIVE" >> $GITHUB_OUTPUT
 
-      - name: Record live stream (if live)
+      - name: Record livestream
         if: steps.livecheck.outputs.is_live == 'true'
         run: |
-          echo "🔴 Live detected — recording…"
-          yt-dlp -f best \
-            -o "stream-%(upload_date)s-%(title).%(ext)s" \
-            "https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ/live" \
-            --hls-use-mpegts
+          mkdir -p recordings
+          yt-dlp -o "recordings/live_%(upload_date)s_%(title)s.%(ext)s" https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ
 
-      - name: Upload recording (if any)
+      - name: Upload recording
         if: steps.livecheck.outputs.is_live == 'true'
         uses: actions/upload-artifact@v4
-
         with:
-          name: live-recording
-          path: stream-*
+          name: livestream-recording
+          path: recordings/
