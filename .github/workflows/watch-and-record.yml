@@ -1,20 +1,12 @@
 name: Watch & Record YouTube Live
 
 on:
-  # 🔁 Scheduled run: every 20 minutes
   schedule:
     - cron: '*/20 * * * *'  # Check every 20 minutes
-
-  # ▶️ Manual trigger via GitHub UI
   workflow_dispatch:
-
-  # 🚀 Run on push to test or main branches (for testing or editing)
   push:
     branches:
       - main
-      - test
-      - testing
-      - livestream-test
 
 jobs:
   watch:
@@ -27,20 +19,16 @@ jobs:
           sudo apt install -y jq
           pip install -U yt-dlp
 
+      - name: Store cookies from GitHub secret
+        run: |
+          echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
+
       - name: Check if channel is live
         id: livecheck
         run: |
-          # Fetch the live status of the YouTube channel
-          LIVE_JSON=$(yt-dlp -j https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ)
-          
-          # Debug output to check the full JSON response
-          echo "Live JSON: $LIVE_JSON"
-          
-          # Extract the 'is_live' field from the JSON
+          # Fetch the live status of the YouTube channel using the cookies and handle age restrictions
+          LIVE_JSON=$(yt-dlp --cookies cookies.txt --geo-bypass --age-limit 18 -j https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ)
           IS_LIVE=$(echo "$LIVE_JSON" | jq -r '.is_live')
-          
-          # Output the live status to GitHub Actions environment
-          echo "Live status: $IS_LIVE"
           echo "is_live=$IS_LIVE" >> $GITHUB_ENV
 
       - name: Debug output of is_live
@@ -50,7 +38,7 @@ jobs:
         if: env.is_live == 'true'
         run: |
           mkdir -p recordings
-          yt-dlp -o "recordings/live_%(upload_date)s_%(title)s.%(ext)s" https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ
+          yt-dlp --cookies cookies.txt --geo-bypass --age-limit 18 -o "recordings/live_%(upload_date)s_%(title)s.%(ext)s" https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ
 
       - name: Upload recording
         if: env.is_live == 'true'
