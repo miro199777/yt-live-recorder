@@ -22,11 +22,23 @@ jobs:
       - name: Store cookies from GitHub secret
         run: |
           echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
+          # Debugging: Check the cookies file content (excluding sensitive data)
+          head -n 10 cookies.txt
 
       - name: Check if channel is live
         id: livecheck
         run: |
+          # Debugging: Check if cookies file exists and is in correct format
+          if [[ ! -f cookies.txt ]]; then
+            echo "Cookies file not found!"
+            exit 1
+          fi
+          
           LIVE_JSON=$(yt-dlp --cookies cookies.txt --geo-bypass --age-limit 18 -j https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ)
+          
+          # Check if we get a valid JSON response
+          echo "LIVE_JSON: $LIVE_JSON"
+          
           IS_LIVE=$(echo "$LIVE_JSON" | jq -r '.is_live')
           echo "Live status: $IS_LIVE"  # Debugging line
           echo "is_live=$IS_LIVE" >> $GITHUB_ENV
