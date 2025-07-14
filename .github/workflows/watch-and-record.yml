@@ -31,7 +31,7 @@ jobs:
           echo "is_live=$IS_LIVE" >> $GITHUB_ENV
 
       - name: Download live stream
-        if: env.is_live == "true"
+        if: ${{ env.is_live == 'true' }}
         run: |
           # Extract video URL and start recording if live
           VIDEO_URL=$(echo "$LIVE_JSON" | jq -r '.url')
