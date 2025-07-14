@@ -29,7 +29,7 @@ jobs:
             echo "Error: cookies.txt does not seem to be in Netscape format!" && exit 1
           fi
 
-      - name: Check if channel is live
+      - name: Check if stream is live
         id: livecheck
         run: |
           # Debugging: Check if cookies file exists and is in correct format
@@ -39,7 +39,7 @@ jobs:
           fi
           
           # Fetch live stream details
-          LIVE_JSON=$(yt-dlp --cookies cookies.txt --geo-bypass --age-limit 18 -j https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ)
+          LIVE_JSON=$(yt-dlp --cookies cookies.txt --geo-bypass --age-limit 18 -j https://www.youtube.com/watch?v=q_w8pdNkKUI)
           
           # Check if we get a valid JSON response
           echo "LIVE_JSON: $LIVE_JSON"
@@ -58,4 +58,3 @@ jobs:
           VIDEO_URL=$(echo "$LIVE_JSON" | jq -r '.url')
           echo "Video is live. Downloading from: $VIDEO_URL"
           yt-dlp --cookies cookies.txt -o './recordings/%(title)s.%(ext)s' $VIDEO_URL
-
