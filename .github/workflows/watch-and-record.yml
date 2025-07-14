@@ -26,23 +26,6 @@ jobs:
       - name: Check if channel is live
         id: livecheck
         run: |
-          # Fetch the live status of the YouTube channel using the cookies and handle age restrictions
           LIVE_JSON=$(yt-dlp --cookies cookies.txt --geo-bypass --age-limit 18 -j https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ)
           IS_LIVE=$(echo "$LIVE_JSON" | jq -r '.is_live')
-          echo "is_live=$IS_LIVE" >> $GITHUB_ENV
-
-      - name: Debug output of is_live
-        run: echo "is_live=${{ env.is_live }}"
-
-      - name: Record livestream
-        if: env.is_live == 'true'
-        run: |
-          mkdir -p recordings
-          yt-dlp --cookies cookies.txt --geo-bypass --age-limit 18 -o "recordings/live_%(upload_date)s_%(title)s.%(ext)s" https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ
-
-      - name: Upload recording
-        if: env.is_live == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: livestream-recording
-          path: recordings/
+          echo "is_live=$IS_LIVE" >>
