@@ -28,4 +28,12 @@ jobs:
         run: |
           LIVE_JSON=$(yt-dlp --cookies cookies.txt --geo-bypass --age-limit 18 -j https://www.youtube.com/channel/UCXyYrNFS1V1HXa_nZvqtZtQ)
           IS_LIVE=$(echo "$LIVE_JSON" | jq -r '.is_live')
-          echo "is_live=$IS_LIVE" >>
+          echo "is_live=$IS_LIVE" >> $GITHUB_ENV
+
+      - name: Download live stream
+        if: env.is_live == "true"
+        run: |
+          # Extract video URL and start recording if live
+          VIDEO_URL=$(echo "$LIVE_JSON" | jq -r '.url')
+          echo "Video is live. Starting download from: $VIDEO_URL"
+          yt-dlp --cookies cookies.txt -o './recordings/%(title)s.%(ext)s' $VIDEO_URL
